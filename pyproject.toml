@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autodocx"
+version = "1.0.0"
+description = "Autodocx is a powerful documentation generator for Python projects using Sphinx, Autodoc2 and Napoleon."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Brian Musakwa", email = "digreatbrian@gmail.com" },
+]
+maintainers = [
+    { name = "Brian Musakwa", email = "digreatbrian@gmail.com" },
+]
+dependencies = [
+    "sphinx>=4.0",
+    "sphinx-autodoc2",
+    "myst-parser",  # If markdown support is needed
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Documentation",
+]
+keywords = [
+    "documentation",
+    "sphinx",
+    "autodoc",
+    "napoleon",
+    "docstring",
+    "google docstrings",
+    "markdown",
+    "sphinx plugin",
+    "python documentation",
+    "autoapi",
+    "autodocx",
+]
+
+[project.urls]
+Homepage = "https://github.com/digreatbrian/autodocx"
+Repository = "https://github.com/digreatbrian/autodocx"
+Issues = "https://github.com/digreatbrian/autodocx/issues"
+Documentation = "https://github.com/digreatbrian/autodocx/wiki"
+CreatorPage = "https://brianmusakwa.link"
+
+[project.entry-points.console_scripts]
+autodocx = "autodocx.__main__:cli"
+
+[tool.setuptools.dynamic]
+version = { attr = "autodocx.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["autodocx*"]

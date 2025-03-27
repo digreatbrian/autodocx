@@ -1,0 +1,5 @@
+include *.txt
+include *.md
+recursive-include autodocx *
+exclude autodocx/**/__pycache__
+exclude autodocx/**/__pycache__/*.pyc
