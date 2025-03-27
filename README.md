@@ -15,7 +15,9 @@
 You can install Autodocx via pip:
 
 ```sh
-pip install autodocx
+git clone https://github.com/digreatbrian/autodocx.git
+cd autodocx
+pip install .
 ```
 
 ## Quick Start
