@@ -108,8 +108,7 @@ This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for d
 ## Author
 
 Developed by **Brian Musakwa**  
-📧 [digreatbrian@gmail.com](mailto:digreatbrian@gmail.com)  
-🌍 [brianmusakwa.link](https://brianmusakwa.link)
+📧 [digreatbrian@gmail.com](mailto:digreatbrian@gmail.com) 
 
 ## Contributing
 
