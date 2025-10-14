@@ -1,4 +1,4 @@
-# Contributing to KivyStart
+# Contributing to Autodocx
 
 First off, thank you for considering contributing to our project! Your contributions help make this project better for everyone.
 
@@ -50,9 +50,8 @@ Please note that this project is released with a [Contributor Code of Conduct](C
 ## Getting Started
 
 To get started with development, follow these steps:
-1. Clone the repository (`git clone https://github.com/digreatbrian/kivystart.git`).
+1. Clone the repository (`git clone https://github.com/digreatbrian/autodocx.git`).
 2. Install dependencies (`pip install -r requirements.txt`, etc.).
-3. Start new project (`python3 -m kivystart makeproject`).
 
 ## Need Help?
 
