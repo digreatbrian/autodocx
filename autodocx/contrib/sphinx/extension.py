@@ -1,19 +1,15 @@
-"""
-Improvements to the `autodocx` package.
-"""
+"""The sphinx extension for the package."""
+
 from __future__ import annotations
 
-import sys
-import shutil
-import hashlib
-import subprocess
-import typing as t
-import importlib
-
-from time import sleep
 from contextlib import suppress
+import hashlib
 from pathlib import Path, PurePosixPath
-from docutils import nodes as _nodes
+import shutil
+import subprocess
+from time import sleep
+import typing as t
+
 from sphinx.application import Sphinx
 
 from autodocx.contrib import __version__
@@ -31,12 +27,6 @@ from autodocx.contrib.sphinx.utils import (
     warn_sphinx,
 )
 from autodocx.contrib.utils import WarningSubtypes, yield_modules
-from autodocx.renderer import XDocstringRenderer
-
-
-__author__ = "Brian Musakwa"
-__email__ = "digreatbrian@gmail.com"
-
 
 try:
     from sphinx.util.display import status_iterator
@@ -46,36 +36,29 @@ except ImportError:
 
 
 def setup(app: Sphinx) -> dict[str, str | bool]:
-    """
-    Entry point for sphinx.
-    """
-    # Create the configuration options
+    """Entry point for sphinx."""
+    # create the configuration options
     for name, default, field in Config().as_triple():
         sphinx_type = t.Any
-        
         if "sphinx_type" in field.metadata:
             sphinx_type = field.metadata["sphinx_type"]
             if sphinx_type in (str, int, float, bool, list):
                 sphinx_type = (sphinx_type,)
-        
         app.add_config_value(
             f"{CONFIG_PREFIX}{name}",
             field.metadata.get("sphinx_default", default),
             "env",
-            types=sphinx_type,
+            types=sphinx_type,  # type: ignore[arg-type]
         )
 
-    # Create the main event
+    # create the main event
     app.connect("builder-inited", run_autodoc)
-    app.add_directive("autodocx-docstring", XDocstringRenderer)
+    app.add_directive("autodocx-docstring", DocstringRenderer)
     app.add_directive("autodocx-summary", AutodocSummary)
     app.add_directive("autodocx-object", AutodocObject)
 
     # TODO support viewcode, when a package is not installed
-    
-    # Regist config
-    app.add_config_value('napoleon_config', {}, 'env')
-    
+
     return {
         "version": __version__,
         # TODO allow for parallelization of some form
@@ -85,58 +68,50 @@ def setup(app: Sphinx) -> dict[str, str | bool]:
 
 
 def run_autodoc(app: Sphinx) -> None:
-    """
-    The primary sphinx call back event for sphinx.
-    """
+    """The primary sphinx call back event for sphinx."""
+
     config = load_config(app)
+
     top_level_modules = []
-    
     for i, _ in enumerate(config.packages):
         mod_path = run_autodoc_package(app, config, i)
         if mod_path is not None:
             top_level_modules.append(mod_path)
-            
-    # Create the index page
+
+    # create the index page
     if top_level_modules and config.index_template:
         import jinja2
-        
+
         content_str = jinja2.Template(config.index_template).render(
             top_level=top_level_modules
         )
-            
         index_path = Path(app.srcdir) / PurePosixPath(config.output_dir) / "index.rst"
-        
         if not (index_path.exists() and index_path.read_text("utf8") == content_str):
             index_path.parent.mkdir(parents=True, exist_ok=True)
             index_path.write_text(content_str, "utf8")
 
 
 def run_autodoc_package(app: Sphinx, config: Config, pkg_index: int) -> str | None:
+    """Run autodoc for a single package.
+
+    :return: The top level module name, relative to the api directory.
     """
-    Run autodoc for a single package.
-    
-    Returns:
-        str | None: The top level module name, relative to the api directory.
-    """
+
     package = config.packages[pkg_index]
 
-    # Find all the modules to analyse
+    # find all the modules to analyse
     root_path: None | Path = Path(app.srcdir)
-    
     if package.from_git_clone is not None:
         url, ref = package.from_git_clone
         root_path = get_git_clone(app, url, ref, config)
-    
     if root_path is None:
         return None
 
     path = root_path / PurePosixPath(package.path)
     modules: t.Iterable[tuple[Path, str]]
-    
     if path.is_file():
         root_module = package.module or path.stem
         modules = [(path, root_module)]
-    
     elif path.is_dir():
         root_module = package.module or path.name
         modules = list(
@@ -153,22 +128,19 @@ def run_autodoc_package(app: Sphinx, config: Config, pkg_index: int) -> str | No
 
     autodocx_db = get_database(app.env)
 
-    # Store mapping of file paths to root modules and their hashes
+    # store mapping of file paths to root modules and their hashes
     # this allows us to check if we need to re-analyse a module
     autodocx_cache: dict[str, EnvCache]
-    
     if not hasattr(app.env, "autodocx_cache"):
         app.env.autodocx_cache = autodocx_cache = {}  # type: ignore
     else:
         autodocx_cache = app.env.autodocx_cache
 
-    # Compute the hash of the modules,
+    # compute the hash of the modules,
     # so we can check if we need to re-analyse them
     hasher = hashlib.sha256()
-    
     for mod_path, _ in sorted(modules):
         hasher.update(mod_path.read_bytes())
-    
     hash_str = hasher.hexdigest()
 
     if (
@@ -180,11 +152,10 @@ def run_autodoc_package(app: Sphinx, config: Config, pkg_index: int) -> str | No
         # TODO perhaps to keep the database upd-to-date we also need to detect
         # if something has been removed
     else:
-        # Clear the current module from the database
+        # clear the current module from the database
         autodocx_db.remove(root_module, descendants=True)
         get_all_analyser(app.env).clear_cache()
-        
-        # Analyse the modules and write to the database
+        # analyse the modules and write to the database
         for mod_path, mod_name in status_iterator(
             modules,
             "[Autodocx] Analysing package...",
@@ -208,11 +179,10 @@ def run_autodoc_package(app: Sphinx, config: Config, pkg_index: int) -> str | No
             shutil.rmtree(output)
         return None
 
-    # Find all the package/module, so we know what files to write
+    # find all the package/module, so we know what files to write
     LOGGER.info("[Autodocx] Determining files to write ...")
     to_write: list[str] = []
     stack = [root_module]
-    
     while stack:
         item = stack.pop()
         to_write.append(item)
@@ -227,10 +197,9 @@ def run_autodoc_package(app: Sphinx, config: Config, pkg_index: int) -> str | No
     def _warn_render(msg: str, type_: WarningSubtypes) -> None:
         warn_sphinx(msg, type_)
 
-    # Write the files
+    # write the files
     output.mkdir(parents=True, exist_ok=True)
     paths = []
-    
     for mod_name in status_iterator(
         to_write,
         "[Autodocx] Writing modules...",
@@ -238,12 +207,10 @@ def run_autodoc_package(app: Sphinx, config: Config, pkg_index: int) -> str | No
         stringify_func=(lambda x: str(x)),
     ):
         render_cls = config.render_plugin
-        
         for pat, cls in config.render_plugin_regexes:
             if pat.fullmatch(mod_name):
                 render_cls = cls
                 break
-        
         content = "\n".join(
             render_cls(
                 autodocx_db,
@@ -252,16 +219,14 @@ def run_autodoc_package(app: Sphinx, config: Config, pkg_index: int) -> str | No
                 warn=_warn_render,
             ).render_item(mod_name)
         )
-        
         out_path = output / (mod_name + render_cls.EXTENSION)
         paths.append(out_path)
-        
         if not (out_path.exists() and out_path.read_text("utf8") == content):
             # Don't write the file if it hasn't changed
             # this means that sphinx doesn't mark it for rebuild (mtime based)
             out_path.write_text(content, "utf8")
 
-    # Clean old files
+    # clean old files
     for path in output.iterdir():
         if path.is_dir():
             continue
@@ -274,20 +239,15 @@ def run_autodoc_package(app: Sphinx, config: Config, pkg_index: int) -> str | No
 def get_git_clone(
     app: Sphinx, url: str, branch_tag: str, config: Config
 ) -> None | Path:
-    """
-    Download a git repository to the given folder.
-    """
-    # Create a sha of the url and branch
+    """Download a git repository to the given folder."""
+    # create a sha of the url and branch
     folder = hashlib.sha256(url.encode("utf8") + branch_tag.encode("utf8")).hexdigest()
     path = Path(app.outdir) / "_autodocx_git_clones" / folder
-    
     if path.exists():
         return path
-    
     LOGGER.info(f"[Autodocx] Cloning {url}@{branch_tag}")
     path.parent.mkdir(parents=True, exist_ok=True)
     retries = 3
-    
     while retries:
         try:
             subprocess.check_call(
@@ -321,8 +281,7 @@ def get_git_clone(
 
 
 class EnvCache(t.TypedDict):
-    """
-    Cache for the environment.
-    """
-    hash: str  # The hash of the package files
-    root_module: str  # The fully qualified root module name
+    """Cache for the environment."""
+
+    hash: str  # the hash of the package files
+    root_module: str  # the fully qualified root module name

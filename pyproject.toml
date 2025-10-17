@@ -16,7 +16,6 @@ maintainers = [
 ]
 dependencies = [
     "sphinx>=4.0",
-    "sphinx-autodoc2",
     "myst-parser",  # If markdown support is needed
 ]
 classifiers = [

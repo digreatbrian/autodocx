@@ -1,0 +1,2 @@
+[console_scripts]
+autodocx = autodocx.__main__:cli
