@@ -74,12 +74,12 @@ napoleon_config = {
     "use_admonition_for_examples": True  # Use admonitions for 'Examples' sections
 }
 
-autodoc2_output_dir = "api"
-autodoc2_render_plugin = "myst"
-autodoc2_include_private = True
-autodoc2_include_special = True
-autodoc2_sort_names = True
-autodoc2_show_if_no_docstring = True
+autodocx_output_dir = "api"
+autodocx_render_plugin = "myst"
+autodocx_include_private = True
+autodocx_include_special = True
+autodocx_sort_names = True
+autodocx_show_if_no_docstring = True
 ```
 
 ## Example Docstring
